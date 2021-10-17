@@ -1,73 +1,53 @@
 import requests
 import pandas as pd
-from tqdm import tqdm
+import multiprocessing
+import parmap
 from bs4 import BeautifulSoup
-
 from article import ArticleCrawler
 from writer import Writer
 
-def crawl_data(base_url: str, size: int) -> list :
-    article_data = []
-    for i in tqdm(range(1, size)) :
-        try :
-            url = base_url + '?page=' + str(i)
-            response = requests.get(url)
-            bs = BeautifulSoup(response.text, 'html.parser')
+def crawl_data(index : int, base_url: str) -> list :
+    try :
+        url = base_url + '?page=' + str(index)
+        response = requests.get(url)
+        bs = BeautifulSoup(response.text, 'html.parser')
 
-            page_url = bs.find('link' , {'rel' : 'canonical'})
-            page_url = page_url['href']            
-            if url != page_url :
-                break
+        page_url = bs.find('link' , {'rel' : 'canonical'})
+        page_url = page_url['href']            
 
-            article_info = bs.findAll('a', {'data-link-name' : 'article'})
-            article_list = [article['href'] for article in article_info]
-            article_list = list(set(article_list))
-            article_data.extend(article_list)
+        article_info = bs.findAll('a', {'data-link-name' : 'article'})
+        article_list = [article['href'] for article in article_info]
+        article_list = list(set(article_list))        
+        return article_list
+    except :
+        return None
 
-        except :
-            continue 
-    article_data = list(set(article_data))
-    print('\nData Size of Articles : %d \n' %len(article_data))
-    return article_data
-
-def save_data(article_list: list, 
-    article_crawler: ArticleCrawler, 
-    writer: Writer) -> pd.DataFrame :
-    title_list, date_list, cate_list, text_paths, img_paths, img_texts = [[] for i in range(6)]
-    for article_url in tqdm(article_list) :
-        try :
-            article_info = article_crawler(article_url)
-            title, date, category, text_path, image_path, image_text = writer(article_info)
-        except :
-            continue
-    
-        title_list.append(title)
-        date_list.append(date)
-        cate_list.append(category)
-        text_paths.append(text_path)
-        img_paths.append(image_path)
-        img_texts.append(image_text)
-    
-    data_df = pd.DataFrame({'title' : title_list, 
-        'date' : date_list,
-        'category' : cate_list, 
-        'text' : text_paths, 
-        'image' : img_paths, 
-        'image_texts' : img_texts}
-    )
-    return data_df
-
+def save_data(article_url: str, article_crawler: ArticleCrawler, writer: Writer) -> tuple :
+    try :
+        article_info = article_crawler(article_url)
+        article_data = writer(article_info)
+        return article_data
+    except :
+        return None
 
 if __name__ == '__main__' :
-    DATA_SIZE = 2000
+    DATA_SIZE = 1900
+    num_cores = multiprocessing.cpu_count()
 
-    world_articles = crawl_data('https://www.theguardian.com/world', DATA_SIZE)
-    uk_articles = crawl_data('https://www.theguardian.com/uk-news', DATA_SIZE)
-    tech_articles = crawl_data('https://www.theguardian.com/technology', DATA_SIZE)
-    business_articles = crawl_data('https://www.theguardian.com/business', DATA_SIZE)
-    sport_articles = crawl_data('https://www.theguardian.com/sport', DATA_SIZE)
-    environment_articles = crawl_data('https://www.theguardian.com/environment', DATA_SIZE)
-    culture_articles = crawl_data('https://www.theguardian.com/culture', DATA_SIZE)
+    world_articles = parmap.map(crawl_data, range(1,DATA_SIZE+1), 'https://www.theguardian.com/world', pm_pbar=True, pm_processes=num_cores) 
+    world_articles = sum(world_articles, [])
+    uk_articles  = parmap.map(crawl_data, range(1,DATA_SIZE+1), 'https://www.theguardian.com/uk-news', pm_pbar=True, pm_processes=num_cores) 
+    uk_articles  = sum(uk_articles , [])
+    tech_articles = parmap.map(crawl_data, range(1,DATA_SIZE+1), 'https://www.theguardian.com/technology', pm_pbar=True, pm_processes=num_cores) 
+    tech_articles = sum(tech_articles, [])
+    business_articles  = parmap.map(crawl_data, range(1,DATA_SIZE+1), 'https://www.theguardian.com/business', pm_pbar=True, pm_processes=num_cores) 
+    business_articles  = sum(business_articles , [])
+    sport_articles = parmap.map(crawl_data, range(1,DATA_SIZE+1), 'https://www.theguardian.com/sport', pm_pbar=True, pm_processes=num_cores) 
+    sport_articles = sum(world_articles, [])
+    environment_articles  = parmap.map(crawl_data, range(1,DATA_SIZE+1), 'https://www.theguardian.com/environment', pm_pbar=True, pm_processes=num_cores) 
+    environment_articles  = sum(environment_articles , [])
+    culture_articles  = parmap.map(crawl_data, range(1,DATA_SIZE+1), 'https://www.theguardian.com/culture', pm_pbar=True, pm_processes=num_cores) 
+    culture_articles  = sum(culture_articles , [])
 
     article_data = world_articles + \
         uk_articles + \
@@ -76,14 +56,18 @@ if __name__ == '__main__' :
         business_articles + \
         sport_articles + \
         culture_articles
-
+    article_data = [article for article in article_data if article != None]
     article_data = list(set(article_data))
-    print('Total size of data : %d ' %len(article_data))
 
+    print('Total size of data : %d ' %len(article_data))
+    
     article_df = pd.DataFrame({'ID' : range(1, len(article_data)+1), 'URL' : article_data})
     article_df.to_csv('./Info/theguardians_article_url.csv')
-
+   
     article_crawler = ArticleCrawler()
     writer = Writer('./Data')
-    info_df = save_data(article_data, article_crawler, writer)
+    article_info = parmap.map(save_data, article_data, article_crawler, writer, pm_pbar=True, pm_processes=num_cores) 
+    article_info = [info for info in article_info if info != None]
+
+    info_df = pd.DataFrame(article_info, columns=['title', 'date', 'category', 'text', 'image', 'image_text'])
     info_df.to_csv('./Info/theguardians_article_info.csv')
