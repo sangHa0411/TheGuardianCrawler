@@ -32,33 +32,20 @@ def save_data(article_url: str, article_crawler: ArticleCrawler, writer: Writer)
 
 if __name__ == '__main__' :
     DATA_SIZE = 1900
+    BASE_URL = 'https://www.theguardian.com/'
+    CATEGORY = ['world', 'uk-new', 'technology' , 'business' , 'sport' , 'environment' , 'culture']
+
     num_cores = multiprocessing.cpu_count()
 
-    world_articles = parmap.map(crawl_data, range(1,DATA_SIZE+1), 'https://www.theguardian.com/world', pm_pbar=True, pm_processes=num_cores) 
-    world_articles = sum(world_articles, [])
-    uk_articles  = parmap.map(crawl_data, range(1,DATA_SIZE+1), 'https://www.theguardian.com/uk-news', pm_pbar=True, pm_processes=num_cores) 
-    uk_articles  = sum(uk_articles , [])
-    tech_articles = parmap.map(crawl_data, range(1,DATA_SIZE+1), 'https://www.theguardian.com/technology', pm_pbar=True, pm_processes=num_cores) 
-    tech_articles = sum(tech_articles, [])
-    business_articles  = parmap.map(crawl_data, range(1,DATA_SIZE+1), 'https://www.theguardian.com/business', pm_pbar=True, pm_processes=num_cores) 
-    business_articles  = sum(business_articles , [])
-    sport_articles = parmap.map(crawl_data, range(1,DATA_SIZE+1), 'https://www.theguardian.com/sport', pm_pbar=True, pm_processes=num_cores) 
-    sport_articles = sum(world_articles, [])
-    environment_articles  = parmap.map(crawl_data, range(1,DATA_SIZE+1), 'https://www.theguardian.com/environment', pm_pbar=True, pm_processes=num_cores) 
-    environment_articles  = sum(environment_articles , [])
-    culture_articles  = parmap.map(crawl_data, range(1,DATA_SIZE+1), 'https://www.theguardian.com/culture', pm_pbar=True, pm_processes=num_cores) 
-    culture_articles  = sum(culture_articles , [])
-
-    article_data = world_articles + \
-        uk_articles + \
-        tech_articles + \
-        environment_articles + \
-        business_articles + \
-        sport_articles + \
-        culture_articles
+    article_data = []
+    for cate in CATEGORY :
+        url = BASE_URL+cate
+        article_list = parmap.map(crawl_data, range(1,DATA_SIZE+1), url, pm_pbar=True, pm_processes=num_cores) 
+        article_list = sum(article_list, [])
+        article_data.extend(article_list)
+        
     article_data = [article for article in article_data if article != None]
     article_data = list(set(article_data))
-
     print('Total size of data : %d ' %len(article_data))
     
     article_df = pd.DataFrame({'ID' : range(1, len(article_data)+1), 'URL' : article_data})
