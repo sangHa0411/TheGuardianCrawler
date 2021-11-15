@@ -2,14 +2,33 @@
 
 ## Goal 
   * Crawling News Data (Article texts, images)
-
+  * Apply multiprocessing to reduce crawling time
 
 ## ToDo List
   1. Pretrained Model(GPT, BERT)
   2. Open Domain Question Answering
   3. Image Classification
   4. Vision Question Answering
-  
+
+## Directory Tree 
+```
+├── ArticleCrawler.ipynb
+├── README.md
+├── asset
+├── article.py
+├── crawler.py
+└── writer.py
+```
+
+## Library Version
+  1. bs4 : '4.6.0'
+  2. pandas : '1.1.5'
+  3. requests : ''2.24.0'
+
+## Termianl
+```
+python crawler.py
+```
 
 ### 1. Main Page
   1. Source : TheGuardian (international edition)
