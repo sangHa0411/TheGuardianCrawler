@@ -49,15 +49,15 @@ class ArticleCrawler :
         
         title = self.get_title(bs)
         date = self.get_date(bs)
-        image_url = self.get_image_url(bs)
-        image_text = self.get_image_text(bs)
+        #image_url = self.get_image_url(bs)
+        #image_text = self.get_image_text(bs)
         text = self.get_text(bs)
         category = url.split('/')[3]
         
         return {'title' : title, 
             'date' : date, 
-            'image_url' : image_url,
-            'image_text' : image_text,
+            #'image_url' : image_url,
+            #'image_text' : image_text,
             'category' : category,
             'text' : text
         }

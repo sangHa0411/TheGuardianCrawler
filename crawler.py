@@ -33,7 +33,17 @@ def save_data(article_url: str, article_crawler: ArticleCrawler, writer: Writer)
 if __name__ == '__main__' :
     DATA_SIZE = 1900
     BASE_URL = 'https://www.theguardian.com/'
-    CATEGORY = ['world', 'uk-new', 'technology' , 'business' , 'sport' , 'environment' , 'culture']
+    CATEGORY = ['world', 
+        'uk-new', 
+        'technology' , 
+        'business' , 
+        'environment' , 
+        'climate-crisis',
+        'science',
+        'global-development',
+        'technology',
+        'coronavirus-outbreak'
+    ]
 
     num_cores = multiprocessing.cpu_count()
 
@@ -56,5 +66,5 @@ if __name__ == '__main__' :
     article_info = parmap.map(save_data, article_data, article_crawler, writer, pm_pbar=True, pm_processes=num_cores) 
     article_info = [info for info in article_info if info != None]
 
-    info_df = pd.DataFrame(article_info, columns=['title', 'date', 'category', 'text', 'image', 'image_text'])
+    info_df = pd.DataFrame(article_info, columns=['title', 'date', 'category', 'text'])
     info_df.to_csv('./Info/theguardians_article_info.csv')
