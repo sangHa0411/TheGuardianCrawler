@@ -9,7 +9,7 @@ class ArticleCrawler :
     def connect(self, url) :
         assert isinstance(url, str)
         response = requests.get(url)
-        bs = BeautifulSoup(response.text, 'html.parser')
+        bs = BeautifulSoup(response.content, 'html.parser')
         return bs
     
     def get_title(self, bs) :
