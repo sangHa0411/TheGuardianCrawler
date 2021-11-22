@@ -34,37 +34,51 @@ if __name__ == '__main__' :
     DATA_SIZE = 1900
     BASE_URL = 'https://www.theguardian.com/'
     CATEGORY = ['world', 
-        'uk-new', 
+        'world/europe-news',
+        'uk-news', 
         'technology' , 
         'business' , 
         'environment' , 
-        'climate-crisis',
+        'environment/climate-crisis',
         'science',
+        'culture',
         'global-development',
         'technology',
-        'coronavirus-outbreak'
+        'sport',
+        'world/coronavirus-outbreak'
     ]
 
-    num_cores = multiprocessing.cpu_count()
+    num_cores = multiprocessing.cpu_count() // 2
+    print('The number of Cores : %d \n' %num_cores)
 
     article_data = []
     for cate in CATEGORY :
+        print('Category : %s' %cate)
         url = BASE_URL+cate
         article_list = parmap.map(crawl_data, range(1,DATA_SIZE+1), url, pm_pbar=True, pm_processes=num_cores) 
+
+        article_list = [article for article in article_list if article != None]
         article_list = sum(article_list, [])
         article_data.extend(article_list)
+        print('Size of articles : %d\n' %len(article_list))
         
-    article_data = [article for article in article_data if article != None]
     article_data = list(set(article_data))
     print('Total size of data : %d ' %len(article_data))
-    
+
     article_df = pd.DataFrame({'ID' : range(1, len(article_data)+1), 'URL' : article_data})
     article_df.to_csv('./Info/theguardians_article_url.csv')
-   
+
+    article_df = pd.read_csv('./Info/theguardians_article_url.csv')
+    article_data = list(article_df['URL'])
+    print('Size of articles : %d' %len(article_data))
+
     article_crawler = ArticleCrawler()
     writer = Writer('./Data')
-    article_info = parmap.map(save_data, article_data, article_crawler, writer, pm_pbar=True, pm_processes=num_cores) 
+
+    article_info = parmap.map(save_data, article_data, article_crawler, writer, pm_pbar=True, pm_processes=4) 
     article_info = [info for info in article_info if info != None]
+    print('Size of articles (Saved) : %d' %len(article_info))
 
     info_df = pd.DataFrame(article_info, columns=['title', 'date', 'category', 'text'])
     info_df.to_csv('./Info/theguardians_article_info.csv')
+    

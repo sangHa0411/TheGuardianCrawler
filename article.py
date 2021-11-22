@@ -41,7 +41,7 @@ class ArticleCrawler :
         p_list = main_content.findAll('p')
         
         text_data = [p.text for p in p_list]
-        text_data = '\n'.join(text_data)
+        text_data = '\n\n'.join(text_data)
         return text_data
     
     def __call__(self, url) :
